@@ -1116,6 +1116,27 @@ def test_nnls_multiblock(dtype_A, dtype_B, x_size):
     assert np.sqrt(np.mean((B - A.dot(x_rec)) ** 2)) <= 1e-4
 
 
+@pytest.mark.parametrize("dtype_A", [np.float32, np.float64])
+@pytest.mark.parametrize("dtype_B", [np.float32, np.float64])
+@pytest.mark.parametrize("x_size", [16, 64, 256])
+def test_nnls_multiblock_multichannel(dtype_A, dtype_B, x_size):
+    srand()
+
+    # Make a random basis
+    A = np.random.randn(7, 1025).astype(dtype_A)
+
+    # Make a random latent matrix (multichannel)
+    #   when x_size is 3, B is 7x3 (smaller than A)
+    x = np.random.randn(2, A.shape[-1], x_size) ** 2
+
+    B = np.einsum('...ft,mf->...mt',x,A)
+
+    x_rec = librosa.util.nnls(A, B)
+
+    assert np.all(x_rec >= 0)
+    assert np.sqrt(np.mean((B - np.einsum('...ft,mf->...mt',x_rec,A)) ** 2)) <= 1e-4
+
+
 @pytest.fixture
 def psig():
 
